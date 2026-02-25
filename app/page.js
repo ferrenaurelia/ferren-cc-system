@@ -35,7 +35,7 @@ export default function ProfessionalCCSystem() {
 
   const fetchTransactions = async () => {
     const { data, error } = await supabase
-      .from("transactions")
+      .from("Transactions")
       .select("*")
       .order("date", { ascending: false });
 
@@ -61,7 +61,7 @@ export default function ProfessionalCCSystem() {
 
     const cleanAmount = parseFloat(amount.replace(/[^0-9]/g, ""));
 
-    const { error } = await supabase.from("transactions").insert([
+    const { error } = await supabase.from("Transactions").insert([
       {
         amount: cleanAmount,
         description,
@@ -84,7 +84,7 @@ export default function ProfessionalCCSystem() {
   // ================= UPDATE STATUS =================
   const updateStatus = async (id, currentStatus) => {
     const { error } = await supabase
-      .from("transactions")
+      .from("Transactions")
       .update({
         status: currentStatus === "Unpaid" ? "Paid" : "Unpaid",
       })
@@ -99,7 +99,7 @@ export default function ProfessionalCCSystem() {
     if (!window.confirm("Yakin ingin menghapus transaksi terpilih?")) return;
 
     const { error } = await supabase
-      .from("transactions")
+      .from("Transactions")
       .delete()
       .in("id", selectedIds);
 
