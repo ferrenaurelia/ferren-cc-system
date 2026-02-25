@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "../lib/supabase";
 
 const CARDS = {
   "CC Ferren 4108": { limit: 5000000 },
