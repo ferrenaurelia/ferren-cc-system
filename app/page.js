@@ -16,6 +16,10 @@ export default function ProfessionalCCSystem() {
   const [password, setPassword] = useState("");
 
   const [transactions, setTransactions] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [lastDeleted, setLastDeleted] = useState([]);
+  const [showUndo, setShowUndo] = useState(false);
+
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [card, setCard] = useState("CC Ferren 4108");
@@ -68,6 +72,56 @@ export default function ProfessionalCCSystem() {
     );
   };
 
+  const toggleSelect = (id) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter((i) => i !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  const triggerUndo = (deletedItems) => {
+    setLastDeleted(deletedItems);
+    setShowUndo(true);
+
+    setTimeout(() => {
+      setShowUndo(false);
+      setLastDeleted([]);
+    }, 5000);
+  };
+
+  const deleteSingle = (id) => {
+    if (!confirm("Yakin ingin menghapus transaksi ini?")) return;
+
+    const deleted = transactions.filter((trx) => trx.id === id);
+    setTransactions(transactions.filter((trx) => trx.id !== id));
+    setSelectedIds(selectedIds.filter((i) => i !== id));
+
+    triggerUndo(deleted);
+  };
+
+  const deleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    if (!confirm("Yakin ingin menghapus transaksi yang dipilih?")) return;
+
+    const deleted = transactions.filter((trx) =>
+      selectedIds.includes(trx.id)
+    );
+
+    setTransactions(
+      transactions.filter((trx) => !selectedIds.includes(trx.id))
+    );
+    setSelectedIds([]);
+
+    triggerUndo(deleted);
+  };
+
+  const undoDelete = () => {
+    setTransactions([...lastDeleted, ...transactions]);
+    setShowUndo(false);
+    setLastDeleted([]);
+  };
+
   const monthlyData = transactions.filter((t) =>
     t.date.startsWith(selectedMonth)
   );
@@ -86,7 +140,6 @@ export default function ProfessionalCCSystem() {
     return {
       name: cardName,
       usage: total,
-      remaining: CARDS[cardName].limit - total,
     };
   });
 
@@ -104,22 +157,9 @@ export default function ProfessionalCCSystem() {
       <div style={styles.center}>
         <div style={styles.card}>
           <h2>Secure Login</h2>
-          <input
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            style={styles.input}
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button style={styles.button} onClick={handleLogin}>
-            Login
-          </button>
+          <input style={styles.input} placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input style={styles.input} type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button style={styles.button} onClick={handleLogin}>Login</button>
         </div>
       </div>
     );
@@ -127,95 +167,55 @@ export default function ProfessionalCCSystem() {
 
   return (
     <div style={{ padding: 30 }}>
-      <h1>Ferren Credit Card Management System 💳</h1>
+      <h1>Ferren Credit Card Management System</h1>
 
-      <input
-        type="month"
-        value={selectedMonth}
-        onChange={(e) => setSelectedMonth(e.target.value)}
-        style={styles.input}
-      />
+      {showUndo && (
+        <div style={styles.undoBar}>
+          Transaksi terhapus.
+          <button onClick={undoDelete} style={styles.undoButton}>
+            Undo
+          </button>
+        </div>
+      )}
+
+      <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} style={styles.input} />
 
       <div style={styles.card}>
         <h3>Dana Rekening CC ({BILLING_ACCOUNT})</h3>
-        <input
-          type="number"
-          value={accountBalance}
-          onChange={(e) =>
-            setAccountBalance(parseFloat(e.target.value) || 0)
-          }
-          style={styles.input}
-          placeholder="Input saldo rekening"
-        />
+        <input type="number" value={accountBalance} onChange={(e) => setAccountBalance(parseFloat(e.target.value) || 0)} style={styles.input} />
         <p>Selisih Dana vs Tagihan: Rp {balanceGap.toLocaleString("id-ID")}</p>
       </div>
 
-      <div style={{ display: "flex", gap: 20 }}>
-        <div style={styles.card}>
-          <h3>Total Bulan Ini</h3>
-          <p>Rp {totalMonthly.toLocaleString("id-ID")}</p>
-        </div>
-        <div style={styles.card}>
-          <h3>Belum Dibayar</h3>
-          <p>Rp {unpaidMonthly.toLocaleString("id-ID")}</p>
-        </div>
+      <div style={styles.card}>
+        <h3>Total Bulan Ini: Rp {totalMonthly.toLocaleString("id-ID")}</h3>
+        <h3>Belum Dibayar: Rp {unpaidMonthly.toLocaleString("id-ID")}</h3>
       </div>
 
       <div style={styles.card}>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={usagePerCard}>
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="usage" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div style={{ display: "flex", gap: 10 }}>
-        <input
-          type="number"
-          placeholder="Nominal"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          style={styles.input}
-        />
-        <input
-          placeholder="Keterangan"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          style={styles.input}
-        />
-        <select
-          value={card}
-          onChange={(e) => setCard(e.target.value)}
-          style={styles.input}
-        >
-          {Object.keys(CARDS).map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
-        <button style={styles.button} onClick={addTransaction}>
-          Tambah
+        <button style={{ ...styles.button, background: "darkred" }} onClick={deleteSelected}>
+          Delete Selected
+        </button>
+        <button style={{ ...styles.button, marginLeft: 10 }} onClick={exportExcel}>
+          Export Excel
         </button>
       </div>
-
-      <button style={{ ...styles.button, marginTop: 20 }} onClick={exportExcel}>
-        Export Monthly Report
-      </button>
 
       <div style={styles.card}>
         {monthlyData.map((trx) => (
           <div key={trx.id} style={styles.row}>
+            <input type="checkbox" checked={selectedIds.includes(trx.id)} onChange={() => toggleSelect(trx.id)} />
             <div>
               <strong>Rp {trx.amount.toLocaleString("id-ID")}</strong>
-              <div>
-                {trx.card} • {trx.description} • {trx.date}
-              </div>
+              <div>{trx.card} • {trx.description} • {trx.date}</div>
             </div>
-            <button style={styles.button} onClick={() => updateStatus(trx.id)}>
-              {trx.status}
-            </button>
+            <div>
+              <button style={styles.button} onClick={() => updateStatus(trx.id)}>
+                {trx.status}
+              </button>
+              <button style={{ ...styles.button, background: "red" }} onClick={() => deleteSingle(trx.id)}>
+                Delete
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -224,37 +224,11 @@ export default function ProfessionalCCSystem() {
 }
 
 const styles = {
-  center: {
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "#f5f5f5",
-  },
-  card: {
-    background: "white",
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 20,
-    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-  },
-  input: {
-    padding: 8,
-    margin: "5px 0",
-    borderRadius: 6,
-    border: "1px solid #ccc",
-  },
-  button: {
-    padding: 8,
-    borderRadius: 6,
-    border: "none",
-    background: "black",
-    color: "white",
-    cursor: "pointer",
-  },
-  row: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
+  center: { minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: "#f5f5f5" },
+  card: { background: "white", padding: 20, borderRadius: 10, marginBottom: 20, boxShadow: "0 4px 10px rgba(0,0,0,0.1)" },
+  input: { padding: 8, margin: "5px 0", borderRadius: 6, border: "1px solid #ccc" },
+  button: { padding: 8, borderRadius: 6, border: "none", background: "black", color: "white", cursor: "pointer", marginLeft: 5 },
+  row: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  undoBar: { background: "#222", color: "white", padding: 10, borderRadius: 8, marginBottom: 15 },
+  undoButton: { marginLeft: 10, padding: 5, background: "orange", border: "none", borderRadius: 5, cursor: "pointer" }
 };
